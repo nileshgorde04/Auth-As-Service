@@ -94,7 +94,6 @@ export function LoginForm() {
       router.push("/dashboard")
     }, 1500)
   }
-
   return (
     <Card className="w-full max-w-md backdrop-blur-xl bg-white/10 border-white/20 shadow-2xl">
       <CardHeader className="space-y-1 text-center">
