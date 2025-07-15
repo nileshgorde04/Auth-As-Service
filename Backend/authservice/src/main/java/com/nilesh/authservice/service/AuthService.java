@@ -2,12 +2,14 @@ package com.nilesh.authservice.service;
 
 import com.nilesh.authservice.dto.AuthRequestDto;
 import com.nilesh.authservice.dto.AuthResponseDto;
+import com.nilesh.authservice.dto.LoginRequestDto;
 import com.nilesh.authservice.model.*;
 import com.nilesh.authservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.Optional;
 
 @Service
@@ -42,6 +44,35 @@ public class AuthService {
         userRepository.save(user);
 
         String jwt = jwtService.generateToken(user);
-        return new AuthResponseDto(jwt);
+        return new AuthResponseDto(
+                jwt,
+                user.getEmail(),
+                user.getRole().name(),
+                user.getProvider().name()
+        );
     }
+
+    public AuthResponseDto login(LoginRequestDto request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+
+        if (user.getProvider() != AuthProvider.EMAIL) {
+            throw new RuntimeException("Please login using " + user.getProvider().name());
+        }
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid email or password");
+        }
+
+        String jwt = jwtService.generateToken(user);
+        user.setLastLogin(new Date());
+        userRepository.save(user);
+        return new AuthResponseDto(
+                jwt,
+                user.getEmail(),
+                user.getRole().name(),
+                user.getProvider().name()
+        );
+    }
+
 }

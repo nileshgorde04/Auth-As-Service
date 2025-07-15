@@ -2,6 +2,7 @@ package com.nilesh.authservice.controller;
 
 import com.nilesh.authservice.dto.AuthRequestDto;
 import com.nilesh.authservice.dto.AuthResponseDto;
+import com.nilesh.authservice.dto.LoginRequestDto;
 import com.nilesh.authservice.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,4 +19,10 @@ public class AuthController {
     public ResponseEntity<AuthResponseDto> register(@RequestBody AuthRequestDto request) {
         return ResponseEntity.ok(authService.register(request));
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponseDto> login(@RequestBody LoginRequestDto request) {
+        return ResponseEntity.ok(authService.login(request));
+    }
+
 }
