@@ -1,6 +1,8 @@
 package com.nilesh.authservice.oauth2;
 
+import com.nilesh.authservice.model.CustomOAuth2User;
 import com.nilesh.authservice.model.User;
+import com.nilesh.authservice.repository.UserRepository;
 import com.nilesh.authservice.service.JwtService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,19 +20,21 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
     private final String redirectUri;
     private final JwtService jwtService;
+    private final UserRepository userRepository;
 
-    public OAuth2AuthenticationSuccessHandler(String redirectUri, JwtService jwtService) {
+    public OAuth2AuthenticationSuccessHandler(String redirectUri, JwtService jwtService, UserRepository userRepository) {
         this.redirectUri = redirectUri;
         this.jwtService = jwtService;
+        this.userRepository = userRepository;
     }
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-        // Logic for generating JWT tokens or redirecting user
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+            throws IOException, ServletException {
+
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
 
-        // You might be loading User entity from DB here
-        User user = UserRepository.findByEmail(oAuth2User.getEmail())  // You can inject this too
+        User user = userRepository.findByEmail(oAuth2User.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         String token = jwtService.generateToken(user);
@@ -38,6 +42,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
                 .queryParam("token", token)
                 .build().toUriString();
-        response.sendRedirect(redirectUri);
+
+        response.sendRedirect(targetUrl);
     }
 }

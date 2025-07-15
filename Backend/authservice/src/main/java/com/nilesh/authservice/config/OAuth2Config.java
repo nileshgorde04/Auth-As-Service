@@ -3,6 +3,9 @@ package com.nilesh.authservice.config;
 import com.nilesh.authservice.oauth2.CustomOAuth2UserService;
 import com.nilesh.authservice.oauth2.OAuth2AuthenticationFailureHandler;
 import com.nilesh.authservice.oauth2.OAuth2AuthenticationSuccessHandler;
+import com.nilesh.authservice.repository.UserRepository;
+import com.nilesh.authservice.service.JwtService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -116,9 +119,14 @@ public class OAuth2Config {
         return new CustomOAuth2UserService();
     }
 
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private UserRepository userRepository;
     @Bean
     public AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler() {
-        return new OAuth2AuthenticationSuccessHandler(authorizedRedirectUri);
+        return new OAuth2AuthenticationSuccessHandler(authorizedRedirectUri, jwtService, userRepository);
     }
 
     @Bean
