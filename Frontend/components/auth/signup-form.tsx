@@ -48,37 +48,45 @@ export function SignupForm() {
     }
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      const res = await fetch("http://localhost:8080/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
 
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          email: formData.email,
-          role: formData.role,
-          provider: "Email",
-          avatar: "/placeholder.svg?height=40&width=40",
-        }),
-      )
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || "Registration failed")
+      }
+
+      const data = await res.json()
+      localStorage.setItem("token", data.token)
 
       toast({
         title: "Account created successfully",
         description: "Welcome to the platform!",
       })
 
+      // Redirect based on selected role
       if (formData.role === "Admin") {
         router.push("/admin")
       } else {
         router.push("/dashboard")
       }
-    } catch (err) {
-      setError("An error occurred. Please try again.")
+    } catch (err: any) {
+      setError(err.message)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleOAuthSignup = (provider: string) => {
+  const handleOAuthSignup = (provider: "google" | "github") => {
+    window.location.href = `http://localhost:8080/oauth2/authorize/${provider}?redirect_uri=http://localhost:3000/oauth2/callback`
+  }
+  /*
+  const handleOAuthSignup = (provider: "google" | "github") => {
     setIsLoading(true)
     setTimeout(() => {
       localStorage.setItem(
@@ -97,7 +105,7 @@ export function SignupForm() {
       router.push("/dashboard")
     }, 1500)
   }
-
+*/
   return (
     <Card className="w-full max-w-md backdrop-blur-xl bg-white/10 border-white/20 shadow-2xl">
       <CardHeader className="space-y-1 text-center">
@@ -263,7 +271,7 @@ export function SignupForm() {
         <div className="grid grid-cols-2 gap-3">
           <Button
             variant="outline"
-            onClick={() => handleOAuthSignup("Google")}
+            onClick={() => handleOAuthSignup("google")}
             disabled={isLoading}
             className="bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
@@ -272,7 +280,7 @@ export function SignupForm() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => handleOAuthSignup("GitHub")}
+            onClick={() => handleOAuthSignup("github")}
             disabled={isLoading}
             className="bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
