@@ -25,6 +25,13 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.security.config.Customizer;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
+
 
 @Configuration
 @EnableWebSecurity
@@ -48,6 +55,7 @@ public class OAuth2Config {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
@@ -91,7 +99,7 @@ public class OAuth2Config {
                 .scope("email", "profile")
                 .authorizationUri("https://accounts.google.com/o/oauth2/v2/auth")
                 .tokenUri("https://www.googleapis.com/oauth2/v4/token")
-                .userInfoUri("https://www.googleapis.com/oauth2/v3/userinfo")
+                .userInfoUri("https://www.googleapics.com/oauth2/v3/userinfo")
                 .userNameAttributeName(IdTokenClaimNames.SUB)
                 .jwkSetUri("https://www.googleapis.com/oauth2/v3/certs")
                 .clientName("Google")
@@ -112,6 +120,18 @@ public class OAuth2Config {
                 .userNameAttributeName("id")
                 .clientName("GitHub")
                 .build();
+    }
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:3000"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     @Bean
