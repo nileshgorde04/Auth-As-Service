@@ -58,23 +58,26 @@ export function SignupForm() {
 
       if (!res.ok) {
         const message = await res.text()
-        throw new Error(message || "Registration failed")
+        // Try to parse the message as JSON if it's an object, otherwise use the text
+        try {
+            const errorJson = JSON.parse(message);
+            throw new Error(errorJson.message || "Registration failed");
+        } catch (e) {
+            throw new Error(message || "Registration failed");
+        }
       }
 
-      const data = await res.json()
-      localStorage.setItem("token", data.token)
-
+      // Show success message
       toast({
-        title: "Account created successfully",
-        description: "Welcome to the platform!",
+        title: "Account Created Successfully!",
+        description: "Please sign in to continue.",
       })
 
-      // Redirect based on selected role
-      if (formData.role === "Admin") {
-        router.push("/admin")
-      } else {
-        router.push("/dashboard")
-      }
+      // Redirect to the login page after a short delay
+      setTimeout(() => {
+        router.push("/")
+      }, 2000) // 2-second delay to allow the user to read the toast message
+
     } catch (err: any) {
       setError(err.message)
     } finally {
