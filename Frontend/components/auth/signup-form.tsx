@@ -84,31 +84,12 @@ export function SignupForm() {
       setIsLoading(false)
     }
   }
-
+{/*}
   const handleOAuthSignup = (provider: "google" | "github") => {
     window.location.href = `http://localhost:8080/oauth2/authorize/${provider}?redirect_uri=http://localhost:3000/oauth2/callback`
   }
-  /*
-  const handleOAuthSignup = (provider: "google" | "github") => {
-    setIsLoading(true)
-    setTimeout(() => {
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          email: `user@${provider.toLowerCase()}.com`,
-          role: "User",
-          provider: provider,
-          avatar: "/placeholder.svg?height=40&width=40",
-        }),
-      )
-      toast({
-        title: "Account created successfully",
-        description: `Signed up with ${provider}`,
-      })
-      router.push("/dashboard")
-    }, 1500)
-  }
-*/
+  */}
+
   return (
     <Card className="w-full max-w-md backdrop-blur-xl bg-white/10 border-white/20 shadow-2xl">
       <CardHeader className="space-y-1 text-center">
@@ -261,7 +242,7 @@ export function SignupForm() {
             )}
           </Button>
         </form>
-
+        {/*}
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t border-white/20" />
@@ -291,7 +272,7 @@ export function SignupForm() {
             GitHub
           </Button>
         </div>
-
+*/}
         <div className="text-center text-sm text-gray-400">
           Already have an account?{" "}
           <Link href="/" className="text-purple-400 hover:text-purple-300 transition-colors">
