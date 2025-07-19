@@ -99,7 +99,8 @@ public class OAuth2Config {
                 .scope("email", "profile")
                 .authorizationUri("https://accounts.google.com/o/oauth2/v2/auth")
                 .tokenUri("https://www.googleapis.com/oauth2/v4/token")
-                .userInfoUri("https://www.googleapics.com/oauth2/v3/userinfo")
+                // Corrected this line
+                .userInfoUri("https://www.googleapis.com/oauth2/v3/userinfo")
                 .userNameAttributeName(IdTokenClaimNames.SUB)
                 .jwkSetUri("https://www.googleapis.com/oauth2/v3/certs")
                 .clientName("Google")
