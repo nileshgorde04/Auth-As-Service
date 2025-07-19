@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { jwtDecode } from "jwt-decode"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,6 +12,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Github, Mail, Eye, EyeOff, Shield } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+
+interface JwtPayload {
+  role: string;
+}
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
@@ -30,70 +34,42 @@ export function LoginForm() {
     setError("")
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      const res = await fetch("http://localhost:8080/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
 
-      // Mock authentication logic
-      if (formData.email === "admin@example.com" && formData.password === "admin123") {
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            email: formData.email,
-            role: "Admin",
-            provider: "Email",
-            avatar: "/placeholder.svg?height=40&width=40",
-          }),
-        )
-        toast({
-          title: "Login successful",
-          description: "Welcome back!",
-        })
-        router.push("/admin")
-      } else if (formData.email && formData.password) {
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            email: formData.email,
-            role: "User",
-            provider: "Email",
-            avatar: "/placeholder.svg?height=40&width=40",
-          }),
-        )
-        toast({
-          title: "Login successful",
-          description: "Welcome back!",
-        })
-        router.push("/dashboard")
-      } else {
-        setError("Invalid email or password")
+      if (!res.ok) {
+        const message = await res.text()
+        throw new Error(message || "Login failed. Please check your credentials.")
       }
-    } catch (err) {
-      setError("An error occurred. Please try again.")
+
+      const data = await res.json()
+      localStorage.setItem("token", data.token)
+
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      })
+
+      const decoded = jwtDecode<JwtPayload>(data.token)
+      if (decoded.role === "ADMIN") {
+        router.push("/admin")
+      } else {
+        router.push("/dashboard")
+      }
+    } catch (err: any) {
+      setError(err.message)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleOAuthLogin = (provider: string) => {
-    setIsLoading(true)
-    // Simulate OAuth login
-    setTimeout(() => {
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          email: `user@${provider.toLowerCase()}.com`,
-          role: "User",
-          provider: provider,
-          avatar: "/placeholder.svg?height=40&width=40",
-        }),
-      )
-      toast({
-        title: "Login successful",
-        description: `Logged in with ${provider}`,
-      })
-      router.push("/dashboard")
-    }, 1500)
+  const handleOAuthLogin = (provider: "google" | "github") => {
+    window.location.href = `http://localhost:8080/oauth2/authorize/${provider}?redirect_uri=http://localhost:3000/oauth2/redirect`
   }
+
   return (
     <Card className="w-full max-w-md backdrop-blur-xl bg-white/10 border-white/20 shadow-2xl">
       <CardHeader className="space-y-1 text-center">
@@ -146,7 +122,7 @@ export function LoginForm() {
           </div>
 
           {error && (
-            <Alert className="bg-red-500/10 border-red-500/20">
+            <Alert variant="destructive" className="bg-red-500/10 border-red-500/20">
               <AlertDescription className="text-red-400">{error}</AlertDescription>
             </Alert>
           )}
@@ -179,7 +155,7 @@ export function LoginForm() {
         <div className="grid grid-cols-2 gap-3">
           <Button
             variant="outline"
-            onClick={() => handleOAuthLogin("Google")}
+            onClick={() => handleOAuthLogin("google")}
             disabled={isLoading}
             className="bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
@@ -188,7 +164,7 @@ export function LoginForm() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => handleOAuthLogin("GitHub")}
+            onClick={() => handleOAuthLogin("github")}
             disabled={isLoading}
             className="bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
