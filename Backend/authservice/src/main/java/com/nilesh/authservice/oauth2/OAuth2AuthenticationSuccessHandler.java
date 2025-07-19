@@ -1,20 +1,16 @@
 package com.nilesh.authservice.oauth2;
 
-import com.nilesh.authservice.model.CustomOAuth2User;
-import com.nilesh.authservice.model.User;
+import com.nilesh.authservice.model.*;
 import com.nilesh.authservice.repository.UserRepository;
 import com.nilesh.authservice.service.JwtService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-
 
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
@@ -33,9 +29,22 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             throws IOException, ServletException {
 
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
+        String providerId = oAuth2User.getName(); // The unique ID from the provider
+        String email = oAuth2User.getEmail();
+        String registrationId = ((org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken) authentication)
+                .getAuthorizedClientRegistrationId();
 
-        User user = userRepository.findByEmail(oAuth2User.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        AuthProvider provider = AuthProvider.valueOf(registrationId.toUpperCase());
+
+        // Find user by email. If not present, create a new one.
+        User user = userRepository.findByEmail(email)
+                .orElseGet(() -> createNewUser(email, provider));
+
+        // Update provider if user exists but logged in with a new OAuth method
+        if (user.getProvider() != provider) {
+            user.setProvider(provider);
+            userRepository.save(user);
+        }
 
         String token = jwtService.generateToken(user);
 
@@ -44,5 +53,15 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                 .build().toUriString();
 
         response.sendRedirect(targetUrl);
+    }
+
+    private User createNewUser(String email, AuthProvider provider) {
+        User newUser = User.builder()
+                .email(email)
+                .role(Role.USER) // Default role for all new OAuth users
+                .provider(provider)
+                .status(UserStatus.ACTIVE)
+                .build();
+        return userRepository.save(newUser);
     }
 }
