@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { jwtDecode } from "jwt-decode"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -11,16 +12,35 @@ interface UserData {
   email: string
   role: string
   provider: string
-  avatar: string
+  avatar: string // This will be a placeholder for now
+}
+
+// Define the structure of the decoded JWT payload
+interface JwtPayload {
+  sub: string // Subject, which is the email
+  role: string
+  provider: string
 }
 
 export function UserDashboard() {
   const [user, setUser] = useState<UserData | null>(null)
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (userData) {
-      setUser(JSON.parse(userData))
+    const token = localStorage.getItem("token")
+    if (token) {
+      try {
+        const decoded = jwtDecode<JwtPayload>(token)
+        // Create the user object from the decoded token
+        setUser({
+          email: decoded.sub,
+          role: decoded.role,
+          provider: decoded.provider,
+          avatar: "/placeholder-user.jpg", // Use a placeholder avatar for now
+        })
+      } catch (error) {
+        console.error("Failed to decode token:", error)
+        // Handle invalid token, maybe redirect to login
+      }
     }
   }, [])
 
@@ -63,7 +83,7 @@ export function UserDashboard() {
               </Avatar>
               <div className="space-y-1">
                 <h3 className="font-medium text-gray-900 dark:text-white">{user.email}</h3>
-                <Badge variant={user.role === "Admin" ? "default" : "secondary"}>{user.role}</Badge>
+                <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>{user.role}</Badge>
               </div>
             </div>
 
