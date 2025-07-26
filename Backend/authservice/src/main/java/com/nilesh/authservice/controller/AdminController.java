@@ -8,7 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import com.nilesh.authservice.dto.UpdateUserStatusDto;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,6 +42,16 @@ public class AdminController {
         return ResponseEntity.ok(userDtos);
     }
 
+    @PutMapping("/users/{id}/status")
+    public ResponseEntity<UserDto> updateUserStatus(@PathVariable String id, @RequestBody UpdateUserStatusDto statusDto) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setStatus(statusDto.getStatus());
+        userRepository.save(user);
+
+        return ResponseEntity.ok(convertToDto(user));
+    }
     /**
      * A private helper method to convert a User entity to a UserDto.
      * This ensures that sensitive data (like the password hash) is not included in the API response.
