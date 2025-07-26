@@ -78,10 +78,45 @@ export function AdminDashboard() {
     // API call to PUT /api/admin/users/{userId}/role
     console.log(`Changing role for user ${userId} to ${newRole}`);
   }
-  const handleSuspendUser = (userId: string) => {
-     // API call to PUT /api/admin/users/{userId}/status
-    console.log(`Toggling suspend for user ${userId}`);
-  }
+const handleSuspendUser = async (userToUpdate: User) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    // Determine the new status
+    const newStatus = userToUpdate.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
+
+    try {
+      const res = await fetch(`http://localhost:8080/api/admin/users/${userToUpdate.id}/status`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update user status");
+      }
+
+      const updatedUser = await res.json();
+
+      // Update the user in the local state to instantly reflect the change
+      setUsers(users.map(user => (user.id === updatedUser.id ? updatedUser : user)));
+
+      toast({
+        title: "Success!",
+        description: `User ${updatedUser.email} has been ${newStatus.toLowerCase()}.`,
+      });
+
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
+  };
    const handleRevokeToken = (userId: string) => {
      // API call to DELETE /api/admin/users/{userId}/tokens
     console.log(`Revoking tokens for user ${userId}`);
@@ -231,7 +266,7 @@ export function AdminDashboard() {
                         <Button variant="ghost" size="sm" onClick={() => setSelectedUser(user)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleSuspendUser(user.id)}>
+                        <Button variant="ghost" size="sm" onClick={() => handleSuspendUser(user)}>
                           <UserX className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleRevokeToken(user.id)}>
