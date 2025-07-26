@@ -80,9 +80,11 @@ export function AdminDashboard() {
   }
 const handleSuspendUser = async (userToUpdate: User) => {
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!token) {
+        router.push("/"); // Redirect to login if no token
+        return;
+    }
 
-    // Determine the new status
     const newStatus = userToUpdate.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
 
     try {
@@ -96,17 +98,18 @@ const handleSuspendUser = async (userToUpdate: User) => {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to update user status");
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to update user status");
       }
 
-      const updatedUser = await res.json();
+      const updatedUser: User = await res.json();
 
-      // Update the user in the local state to instantly reflect the change
+      // Update the user list in the UI instantly
       setUsers(users.map(user => (user.id === updatedUser.id ? updatedUser : user)));
 
       toast({
-        title: "Success!",
-        description: `User ${updatedUser.email} has been ${newStatus.toLowerCase()}.`,
+        title: "Status Updated!",
+        description: `User ${updatedUser.email} is now ${newStatus.toLowerCase()}.`,
       });
 
     } catch (err: any) {
