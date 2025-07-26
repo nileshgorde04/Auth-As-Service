@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { jwtDecode } from "jwt-decode"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -15,11 +16,19 @@ import {
 import { Shield, User, Settings, LogOut, Moon, Sun } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
+// This interface matches the data we get from the JWT token
 interface UserData {
   email: string
   role: string
   provider: string
-  avatar: string
+  avatar: string // We'll use a placeholder for this
+}
+
+// Define the structure of the decoded JWT payload
+interface JwtPayload {
+  sub: string // Subject (email)
+  role: string
+  provider: string
 }
 
 export function Navbar() {
@@ -29,12 +38,24 @@ export function Navbar() {
   const { toast } = useToast()
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (userData) {
-      setUser(JSON.parse(userData))
+    // Check for the token instead of the 'user' object
+    const token = localStorage.getItem("token")
+    if (token) {
+        try {
+            const decoded = jwtDecode<JwtPayload>(token);
+            setUser({
+                email: decoded.sub,
+                role: decoded.role,
+                provider: decoded.provider,
+                avatar: "/placeholder-user.jpg" // Default avatar
+            });
+        } catch (error) {
+            console.error("Invalid token found in localStorage", error);
+            localStorage.removeItem("token"); // Clean up invalid token
+        }
     }
 
-    // Check for dark mode preference
+    // Dark mode logic remains the same
     const darkMode = localStorage.getItem("darkMode") === "true"
     setIsDarkMode(darkMode)
     if (darkMode) {
@@ -43,7 +64,8 @@ export function Navbar() {
   }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem("user")
+    localStorage.removeItem("token") // Remove the token on logout
+    setUser(null) // Clear the user state
     toast({
       title: "Logged out",
       description: "You have been successfully logged out",
@@ -69,7 +91,7 @@ export function Navbar() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link
-              href={user ? (user.role === "Admin" ? "/admin" : "/dashboard") : "/"}
+              href={user ? (user.role === "ADMIN" ? "/admin" : "/dashboard") : "/"}
               className="flex items-center space-x-2"
             >
               <Shield className="h-6 w-6 text-purple-600" />
@@ -105,7 +127,7 @@ export function Navbar() {
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href={user.role === "Admin" ? "/admin" : "/dashboard"}>
+                    <Link href={user.role === "ADMIN" ? "/admin" : "/dashboard"}>
                       <User className="mr-2 h-4 w-4" />
                       Dashboard
                     </Link>
