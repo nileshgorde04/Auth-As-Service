@@ -1,9 +1,8 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
+import React, { useState, useEffect } from "react" // Import useEffect
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation" // Import useSearchParams
 import { jwtDecode } from "jwt-decode"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,7 +25,19 @@ export function LoginForm() {
     password: "",
   })
   const router = useRouter()
+  const searchParams = useSearchParams() // Hook to read URL query params
   const { toast } = useToast()
+
+  // This hook will run when the component loads and check for an error in the URL
+  useEffect(() => {
+    const oauthError = searchParams.get("error")
+    if (oauthError) {
+      setError(oauthError)
+      // Optional: clean the URL so the error doesn't stay there on refresh
+      router.replace("/", { scroll: false });
+    }
+  }, [searchParams, router])
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,8 +52,8 @@ export function LoginForm() {
       })
 
       if (!res.ok) {
-        const message = await res.text()
-        throw new Error(message || "Login failed. Please check your credentials.")
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Login failed. Please check your credentials.");
       }
 
       const data = await res.json()
@@ -80,6 +91,12 @@ export function LoginForm() {
         <CardDescription className="text-gray-300">Sign in to your account to continue</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* This Alert component will now display errors from both normal login and OAuth redirects */}
+        {error && (
+            <Alert variant="destructive" className="bg-red-500/10 border-red-500/20">
+              <AlertDescription className="text-red-400">{error}</AlertDescription>
+            </Alert>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email" className="text-white">
@@ -120,12 +137,6 @@ export function LoginForm() {
               </Button>
             </div>
           </div>
-
-          {error && (
-            <Alert variant="destructive" className="bg-red-500/10 border-red-500/20">
-              <AlertDescription className="text-red-400">{error}</AlertDescription>
-            </Alert>
-          )}
 
           <Button
             type="submit"
