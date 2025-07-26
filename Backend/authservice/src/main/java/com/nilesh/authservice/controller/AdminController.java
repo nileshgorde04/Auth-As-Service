@@ -1,5 +1,9 @@
 package com.nilesh.authservice.controller;
 
+import com.nilesh.authservice.dto.UpdateUserStatusDto;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import com.nilesh.authservice.dto.UserDto;
 import com.nilesh.authservice.model.User;
 import com.nilesh.authservice.repository.UserRepository;
@@ -8,9 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
+
 import com.nilesh.authservice.dto.UpdateUserStatusDto;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,7 +47,7 @@ public class AdminController {
     @PutMapping("/users/{id}/status")
     public ResponseEntity<UserDto> updateUserStatus(@PathVariable String id, @RequestBody UpdateUserStatusDto statusDto) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
 
         user.setStatus(statusDto.getStatus());
         userRepository.save(user);
