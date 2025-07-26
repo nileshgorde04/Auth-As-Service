@@ -29,8 +29,24 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             throws IOException, ServletException {
 
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
-        String providerId = oAuth2User.getName(); // The unique ID from the provider
         String email = oAuth2User.getEmail();
+
+        // === START: ADD THIS BLOCK TO HANDLE GITHUB'S NULL EMAIL ===
+        if (email == null) {
+            String registrationId = ((org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken) authentication)
+                    .getAuthorizedClientRegistrationId();
+
+            if ("github".equalsIgnoreCase(registrationId)) {
+                // Redirect to the login page with a specific error for GitHub
+                String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/")
+                        .queryParam("error", "Unable to get email from GitHub. Please set a public email in your GitHub profile.")
+                        .build().toUriString();
+                response.sendRedirect(targetUrl);
+                return;
+            }
+        }
+        // === END: GITHUB FIX ===
+
         String registrationId = ((org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken) authentication)
                 .getAuthorizedClientRegistrationId();
 
