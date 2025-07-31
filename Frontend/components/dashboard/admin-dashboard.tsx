@@ -70,7 +70,7 @@ export function AdminDashboard() {
       }
     }
 
-    fetchUsers()
+    fetchUsers()  
   }, [router, toast])
 
   // You can implement these functions later to call the backend
