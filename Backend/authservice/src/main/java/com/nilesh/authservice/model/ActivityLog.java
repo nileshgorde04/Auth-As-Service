@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-
+import jakarta.persistence.FetchType;
 import java.util.Date;
 
 @Data
@@ -35,7 +35,7 @@ public class ActivityLog {
     @Column(nullable = false, updatable = false)
     private Date timestamp;
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }
