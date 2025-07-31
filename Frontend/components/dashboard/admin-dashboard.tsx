@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { format } from "date-fns"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,22 +12,31 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Users, Shield, Activity, AlertTriangle, Eye, UserX, MoreHorizontal, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { useRouter } from "next/navigation"
 
-
-// This interface now matches the UserDto from the backend
 interface User {
   id: string
   email: string
   role: "ADMIN" | "USER"
   provider: string
   status: "ACTIVE" | "SUSPENDED"
-  lastLogin: string | null // Can be null for new users
+  lastLogin: string | null
   avatar: string | null
+}
+
+interface ActivityLog {
+  id: string;
+  action: string;
+  ipAddress: string;
+  details: string;
+  timestamp: string;
+  user: {
+      email: string;
+  };
 }
 
 export function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([])
+  const [logs, setLogs] = useState<ActivityLog[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -37,7 +48,6 @@ export function AdminDashboard() {
     const fetchUsers = async () => {
       const token = localStorage.getItem("token")
       if (!token) {
-        // If no token, redirect to login
         router.push("/")
         return
       }
@@ -70,23 +80,34 @@ export function AdminDashboard() {
       }
     }
 
-    fetchUsers()  
+    fetchUsers()
   }, [router, toast])
 
-  // You can implement these functions later to call the backend
-  const handleRoleChange = (userId: string, newRole: "ADMIN" | "USER") => {
-    // API call to PUT /api/admin/users/{userId}/role
-    console.log(`Changing role for user ${userId} to ${newRole}`);
-  }
-const handleSuspendUser = async (userToUpdate: User) => {
+  const handleViewLogs = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    setShowLogs(true);
+
+    try {
+        const res = await fetch("http://localhost:8080/api/admin/logs", {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch logs.");
+        const data: ActivityLog[] = await res.json();
+        setLogs(data);
+    } catch (err: any) {
+        toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleSuspendUser = async (userToUpdate: User) => {
     const token = localStorage.getItem("token");
     if (!token) {
-        router.push("/"); // Redirect to login if no token
+        router.push("/");
         return;
     }
-
     const newStatus = userToUpdate.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
-
     try {
       const res = await fetch(`http://localhost:8080/api/admin/users/${userToUpdate.id}/status`, {
         method: "PUT",
@@ -96,22 +117,16 @@ const handleSuspendUser = async (userToUpdate: User) => {
         },
         body: JSON.stringify({ status: newStatus }),
       });
-
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Failed to update user status");
       }
-
       const updatedUser: User = await res.json();
-
-      // Update the user list in the UI instantly
       setUsers(users.map(user => (user.id === updatedUser.id ? updatedUser : user)));
-
       toast({
         title: "Status Updated!",
         description: `User ${updatedUser.email} is now ${newStatus.toLowerCase()}.`,
       });
-
     } catch (err: any) {
       toast({
         title: "Error",
@@ -120,9 +135,15 @@ const handleSuspendUser = async (userToUpdate: User) => {
       });
     }
   };
-   const handleRevokeToken = (userId: string) => {
-     // API call to DELETE /api/admin/users/{userId}/tokens
+
+  const handleRoleChange = (userId: string, newRole: "ADMIN" | "USER") => {
+    console.log(`Changing role for user ${userId} to ${newRole}`);
+    toast({ title: "Info", description: "Role change feature not yet implemented." });
+  }
+
+  const handleRevokeToken = (userId: string) => {
     console.log(`Revoking tokens for user ${userId}`);
+    toast({ title: "Info", description: "Token revocation feature not yet implemented." });
   }
 
   const stats = {
@@ -160,15 +181,13 @@ const handleSuspendUser = async (userToUpdate: User) => {
             Manage users, monitor activity, and configure system settings
           </p>
         </div>
-        <Button onClick={() => setShowLogs(true)}>
+        <Button onClick={handleViewLogs}>
           <Activity className="mr-2 h-4 w-4" />
-          View Logs (Not Implemented)
+          View Logs
         </Button>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Total Users */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -178,7 +197,6 @@ const handleSuspendUser = async (userToUpdate: User) => {
             <div className="text-2xl font-bold">{stats.totalUsers}</div>
           </CardContent>
         </Card>
-        {/* Active Users */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Users</CardTitle>
@@ -188,7 +206,6 @@ const handleSuspendUser = async (userToUpdate: User) => {
             <div className="text-2xl font-bold">{stats.activeUsers}</div>
           </CardContent>
         </Card>
-        {/* Administrators */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Administrators</CardTitle>
@@ -198,7 +215,6 @@ const handleSuspendUser = async (userToUpdate: User) => {
             <div className="text-2xl font-bold">{stats.adminUsers}</div>
           </CardContent>
         </Card>
-        {/* Suspended Users */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Suspended</CardTitle>
@@ -210,7 +226,6 @@ const handleSuspendUser = async (userToUpdate: User) => {
         </Card>
       </div>
 
-      {/* Users Table */}
       <Card>
         <CardHeader>
           <CardTitle>User Management</CardTitle>
@@ -262,7 +277,7 @@ const handleSuspendUser = async (userToUpdate: User) => {
                       <Badge variant={user.status === "ACTIVE" ? "default" : "destructive"}>{user.status}</Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}
+                      {user.lastLogin ? format(new Date(user.lastLogin), "PPP p") : 'Never'}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
@@ -285,7 +300,83 @@ const handleSuspendUser = async (userToUpdate: User) => {
         </CardContent>
       </Card>
       
-      {/* Dialogs remain the same for now */}
+      <Dialog open={!!selectedUser} onOpenChange={() => setSelectedUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>User Details</DialogTitle>
+            <DialogDescription>View detailed information about this user account</DialogDescription>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={selectedUser.avatar || "/placeholder-user.jpg"} alt={selectedUser.email} />
+                  <AvatarFallback className="text-lg">{selectedUser.email.charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-medium">{selectedUser.email}</h3>
+                  <Badge variant={selectedUser.role === "ADMIN" ? "default" : "secondary"}>{selectedUser.role}</Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium">Provider:</span>
+                  <p className="text-muted-foreground">{selectedUser.provider}</p>
+                </div>
+                <div>
+                  <span className="font-medium">Status:</span>
+                  <p className="text-muted-foreground">{selectedUser.status}</p>
+                </div>
+                <div>
+                  <span className="font-medium">Last Login:</span>
+                  <p className="text-muted-foreground">{selectedUser.lastLogin ? format(new Date(selectedUser.lastLogin), "PPP p") : 'Never'}</p>
+                </div>
+                <div>
+                  <span className="font-medium">User ID:</span>
+                  <p className="text-muted-foreground">{selectedUser.id}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showLogs} onOpenChange={setShowLogs}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>System Activity Logs</DialogTitle>
+            <DialogDescription>Recent system activity and user actions</DialogDescription>
+          </DialogHeader>
+          <div className="rounded-md border max-h-[60vh] overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Action</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Timestamp</TableHead>
+                  <TableHead>IP Address</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {logs.length > 0 ? logs.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="font-medium">{log.action.replace(/_/g, ' ')}</TableCell>
+                    <TableCell>{log.user.email}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {format(new Date(log.timestamp), "PPP p")}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{log.ipAddress}</TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center h-24">No activity logs found.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
