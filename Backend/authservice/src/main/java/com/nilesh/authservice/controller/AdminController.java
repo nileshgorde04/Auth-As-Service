@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.nilesh.authservice.dto.UpdateUserStatusDto;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.nilesh.authservice.model.ActivityLog;
+import com.nilesh.authservice.repository.ActivityLogRepository;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 public class AdminController {
 
     private final UserRepository userRepository;
+    private final ActivityLogRepository activityLogRepository;
 
     /**
      * Endpoint to get a list of all users.
@@ -53,6 +56,11 @@ public class AdminController {
         userRepository.save(user);
 
         return ResponseEntity.ok(convertToDto(user));
+    }
+
+    @GetMapping("/logs")
+    public ResponseEntity<List<ActivityLog>> getAllLogs() {
+        return ResponseEntity.ok(activityLogRepository.findAll());
     }
     /**
      * A private helper method to convert a User entity to a UserDto.

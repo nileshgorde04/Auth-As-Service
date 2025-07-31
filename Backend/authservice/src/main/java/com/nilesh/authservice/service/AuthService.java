@@ -8,6 +8,9 @@ import com.nilesh.authservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Date;
 import java.util.Optional;
@@ -19,6 +22,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final ActivityLogService activityLogService;
 
     public AuthResponseDto register(AuthRequestDto request) {
 
@@ -67,6 +71,8 @@ public class AuthService {
         String jwt = jwtService.generateToken(user);
         user.setLastLogin(new Date());
         userRepository.save(user);
+        HttpServletRequest httpRequest = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+        activityLogService.logActivity(user, "USER_LOGIN", httpRequest.getRemoteAddr(), "User logged in successfully.");
         return new AuthResponseDto(
                 jwt,
                 user.getEmail(),
